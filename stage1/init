@@ -1,0 +1,49 @@
+#!/stage1/busybox sh
+_PATH="$PATH"
+cd /
+
+BB=/stage1/busybox
+
+$BB date >>boot.txt
+exec >>boot.txt 2>&1
+
+$BB mount -t proc proc /proc
+$BB mount -t sysfs sysfs /sys
+
+$BB mount -t rootfs -o remount,rw rootfs
+
+if $BB grep -q bootmode=2 /proc/cmdline; then
+	# recovery mode
+	$BB rm /init.rc
+	$BB cp -ap /recovery.rc /init.rc
+	$BB rm /init
+	$BB rm /default.prop
+	$BB mv /boot /init
+	$BB mv /default.prop.rec /default.prop
+	$BB rm -fr /stage1
+	exec /init
+fi;
+
+
+$BB umount /sys
+$BB umount /proc
+$BB date >>boot.txt
+$BB rm -rf /etc
+$BB rm -rf /license
+$BB rm -rf /supersu
+$BB rm /init
+$BB mv /boot /init
+$BB rm /sbin/*
+$BB cp -ap /stage1/adbd /sbin/adbd
+$BB cp -ap /stage1/cbd /sbin/cbd
+$BB cp -ap /stage1/healthd /sbin/healthd
+$BB cp -ap /stage1/read_boot_headers /sbin/read_boot_headers
+$BB cp -ap /stage1/test_bln.sh /sbin/test_bln.sh
+#$BB cp -ap /stage1/ueventd /sbin/ueventd
+#$BB cp -ap /stage1/watchdogd /sbin/watchdogd
+$BB ln -s /init /sbin/ueventd
+$BB ln -s /init /sbin/watchdogd
+$BB rm -fr /stage1 /dev/*
+export PATH="${_PATH}"
+exec /init
+
